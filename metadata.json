@@ -1,0 +1,6 @@
+{
+  "name": "Shruti Beauty Saloon & Academy",
+  "description": "Billing and daily sales portal for Shruti Beauty Saloon & Academy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
