@@ -44,7 +44,13 @@ export default function App() {
   }, [sales, storageKey]);
 
   // Handle adding sale entry automatically or manually
-  const handleAddSaleEntry = (name: string, amount: number) => {
+  const handleAddSaleEntry = (
+    name: string,
+    amount: number,
+    items?: string[],
+    clientName?: string,
+    discount?: number
+  ) => {
     const timeStr = new Date().toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
@@ -56,6 +62,9 @@ export default function App() {
       name: name.trim(),
       amount: amount,
       time: timeStr,
+      items,
+      clientName,
+      discount,
     };
 
     setSales((prev) => [newEntry, ...prev]);

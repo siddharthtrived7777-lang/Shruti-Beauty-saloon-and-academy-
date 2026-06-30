@@ -15,4 +15,7 @@ export interface SalesEntry {
   name: string;
   amount: number;
   time: string; // HH:MM AM/PM
+  items?: string[]; // list of item strings like "Eyebrow x2"
+  clientName?: string;
+  discount?: number;
 }

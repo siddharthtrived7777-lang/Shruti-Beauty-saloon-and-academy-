@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Calendar, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Calendar, AlertCircle, X, Receipt } from "lucide-react";
 import { SalesEntry } from "../types";
 
 interface DailySalesProps {
@@ -8,10 +8,12 @@ interface DailySalesProps {
 }
 
 export default function DailySales({ sales, setSales }: DailySalesProps) {
-
   // Form State
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
+
+  // Selected entry for viewing details
+  const [selectedEntry, setSelectedEntry] = useState<SalesEntry | null>(null);
 
   // Confirmation state for clearing
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -153,15 +155,27 @@ export default function DailySales({ sales, setSales }: DailySalesProps) {
           <div className="flex flex-col flex-grow">
             <div className="divide-y divide-gray-100 max-h-[350px] overflow-y-auto pr-1">
               {sales.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between py-2.5">
+                <div
+                  key={entry.id}
+                  onClick={() => setSelectedEntry(entry)}
+                  className="flex items-center justify-between py-2.5 hover:bg-gray-50/80 px-2 -mx-2 rounded-md transition-all cursor-pointer group"
+                  title="Click to view details"
+                >
                   <div className="flex flex-col min-w-0 pr-2">
-                    <span className="text-sm font-medium text-gray-800 truncate">
+                    <span className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">
                       {entry.name}
                     </span>
-                    <span className="text-[10px] text-gray-400">{entry.time}</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-gray-400">{entry.time}</span>
+                      {entry.items && entry.items.length > 0 && (
+                        <span className="text-[9px] bg-blue-50 text-blue-600 px-1 py-0.2 rounded font-semibold tracking-wide uppercase">
+                          Bill Details
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <span className="text-sm font-semibold text-[#059669]">
                       {formatCurrency(entry.amount)}
                     </span>
@@ -229,6 +243,100 @@ export default function DailySales({ sales, setSales }: DailySalesProps) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Entry Details Modal */}
+      {selectedEntry && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in"
+          id="entry-details-modal-overlay"
+          onClick={() => setSelectedEntry(null)}
+        >
+          <div
+            className="bg-white rounded-lg border border-gray-200 p-5 w-full max-w-sm shadow-xl flex flex-col gap-4"
+            id="entry-details-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4.5 h-4.5 text-blue-600" />
+                <h3 className="font-bold text-gray-900 text-base">Sales Entry Detail</h3>
+              </div>
+              <button
+                onClick={() => setSelectedEntry(null)}
+                className="p-1 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="flex flex-col gap-3">
+              {/* Common Info */}
+              <div className="grid grid-cols-2 gap-y-2 text-xs border-b border-gray-50 pb-3">
+                <div className="text-gray-400 font-medium">Recorded Time</div>
+                <div className="text-gray-800 font-semibold text-right">{selectedEntry.time}</div>
+
+                <div className="text-gray-400 font-medium">Entry Total</div>
+                <div className="text-[#059669] font-bold text-sm text-right">
+                  {formatCurrency(selectedEntry.amount)}
+                </div>
+              </div>
+
+              {/* Bill Details if exist */}
+              {selectedEntry.items && selectedEntry.items.length > 0 ? (
+                <div className="flex flex-col gap-2.5">
+                  {selectedEntry.clientName && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-400 font-medium">Client Name</span>
+                      <span className="text-gray-800 font-semibold">{selectedEntry.clientName}</span>
+                    </div>
+                  )}
+
+                  {selectedEntry.discount !== undefined && selectedEntry.discount > 0 && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-400 font-medium">Discount Code / Value</span>
+                      <span className="text-blue-600 font-semibold">{selectedEntry.discount}% Off</span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                      Included Items ({selectedEntry.items.length})
+                    </span>
+                    <div className="bg-gray-50 rounded-md border border-gray-100 p-2.5 max-h-[160px] overflow-y-auto flex flex-col gap-1.5">
+                      {selectedEntry.items.map((item, idx) => (
+                        <div key={idx} className="text-xs text-gray-700 leading-normal border-b border-gray-100/50 pb-1 last:border-0 last:pb-0">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5 pt-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400 font-medium">Label</span>
+                    <span className="text-gray-800 font-semibold">{selectedEntry.name}</span>
+                  </div>
+                  <div className="bg-gray-50 rounded-md border border-gray-100 p-2.5 text-xs text-gray-500 italic text-center">
+                    This is a quick entry added directly to the daily sales.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer button */}
+            <button
+              onClick={() => setSelectedEntry(null)}
+              className="w-full mt-2 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-md transition-colors cursor-pointer"
+            >
+              Close Details
+            </button>
+          </div>
         </div>
       )}
     </div>

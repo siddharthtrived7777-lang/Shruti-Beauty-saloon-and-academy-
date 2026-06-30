@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Search, User, Plus, Minus, Send, ArrowLeft, Trash2, Check } from "lucide-react";
+import { Search, User, Plus, Minus, Send, ArrowLeft, Trash2, Check, QrCode } from "lucide-react";
 import { Service, BillItem } from "../types";
 import { SERVICES, CATEGORIES } from "../data";
 
@@ -10,7 +10,7 @@ interface BillCalculatorProps {
   setClientName: (name: string) => void;
   discount: number;
   setDiscount: (discount: number) => void;
-  onAddSaleEntry: (name: string, amount: number) => void;
+  onAddSaleEntry: (name: string, amount: number, items?: string[], clientName?: string, discount?: number) => void;
 }
 
 export default function BillCalculator({
@@ -25,6 +25,7 @@ export default function BillCalculator({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isViewingBill, setIsViewingBill] = useState(false);
+  const [showPaymentQr, setShowPaymentQr] = useState(false);
 
   // Filtered services based on search and category
   const filteredServices = useMemo(() => {
@@ -175,7 +176,10 @@ export default function BillCalculator({
     if (saleName.length > 50) {
       saleName = saleName.substring(0, 47) + "...";
     }
-    onAddSaleEntry(saleName, grandTotal);
+    const itemDetailsList = billItems.map(
+      (item) => `${item.service.name} (${formatCurrency(item.service.price)} × ${item.quantity}) = ${formatCurrency(item.service.price * item.quantity)}`
+    );
+    onAddSaleEntry(saleName, grandTotal, itemDetailsList, clientName.trim() || undefined, discount);
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
@@ -339,6 +343,50 @@ export default function BillCalculator({
               </div>
             </div>
           </div>
+
+          {/* Payment QR Block */}
+          {showPaymentQr ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col items-center justify-center text-center animate-fade-in" id="payment-qr-card">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                Scan & Pay {formatCurrency(grandTotal)}
+              </span>
+              <div className="bg-white p-2 border border-gray-100 rounded-lg shadow-inner mb-3">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`upi://pay?pa=8000167776@ybl&pn=Shruti Beauty Saloon&am=${grandTotal}&cu=INR&tn=Beauty Services`)}`}
+                  alt="UPI QR Code"
+                  className="w-[220px] h-[220px]"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <span className="text-sm font-bold text-gray-800">
+                UPI: 8000167776@ybl
+              </span>
+              <span className="text-[10px] text-gray-400 mt-1 font-semibold tracking-wide uppercase">
+                PhonePe • GPay • Paytm • Any UPI App
+              </span>
+              <button
+                onClick={() => setShowPaymentQr(false)}
+                className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                id="hide-qr-button"
+              >
+                Hide QR
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowPaymentQr(true)}
+              disabled={billItems.length === 0}
+              className={`w-full py-2.5 px-4 bg-white font-semibold rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+                billItems.length === 0
+                  ? "border-gray-200 text-gray-400 cursor-not-allowed"
+                  : "border-blue-200 text-blue-600 hover:text-blue-700 hover:bg-blue-50/50"
+              }`}
+              id="show-qr-button"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Show Payment QR</span>
+            </button>
+          )}
 
           {/* Actions */}
           <div className="grid grid-cols-1 gap-2 mt-2">
